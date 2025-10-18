@@ -310,13 +310,13 @@
     };
 
     const compressToLimit = (canvas, maxBytes) => {
-      let low = 0.01;
-      let high = 1.0;
+      let low = 0.05;
+      let high = 0.95;
       let best = null;
       let bestQuality = high;
       let withinLimit = false;
 
-      for (let i = 0; i < 12; i++) {
+      for (let i = 0; i < 10; i++) {
         const quality = (low + high) / 2;
         const dataUrl = canvas.toDataURL('image/jpeg', quality);
         const blob = dataURLToBlob(dataUrl);
@@ -327,9 +327,9 @@
           best = { dataUrl, size };
           bestQuality = quality;
           withinLimit = true;
-          low = quality;
-        } else {
           high = quality;
+        } else {
+          low = quality;
         }
       }
 
@@ -340,23 +340,6 @@
           best = { dataUrl: fallbackUrl, size: fallbackBlob.size };
           bestQuality = low;
           withinLimit = fallbackBlob.size <= maxBytes;
-        }
-      }
-
-      if (best && withinLimit) {
-        let stepQuality = bestQuality;
-        while (stepQuality < 0.999) {
-          const nextQuality = Math.min(stepQuality + 0.01, 0.999);
-          if (nextQuality <= stepQuality) break;
-          const candidateUrl = canvas.toDataURL('image/jpeg', nextQuality);
-          const candidateBlob = dataURLToBlob(candidateUrl);
-          if (!candidateBlob) break;
-          if (candidateBlob.size > maxBytes) {
-            break;
-          }
-          best = { dataUrl: candidateUrl, size: candidateBlob.size };
-          bestQuality = nextQuality;
-          stepQuality = nextQuality;
         }
       }
 
@@ -381,13 +364,8 @@
       resultImage.src = dataUrl;
       resultDimensions.textContent = `${TARGET_WIDTH} × ${TARGET_HEIGHT}`;
       resultSize.textContent = `${formatBytes(size)} / 50.00 KB`;
-      resultQuality.textContent = quality ? `JPEG Q=${(quality * 100).toFixed(1)}%` : '-';
-      if (withinLimit) {
-        const remaining = Math.max(0, MAX_BYTES - size);
-        resultStatus.textContent = `✅ 已满足尺寸与体积要求（距 50KB 上限剩余 ${(remaining / 1024).toFixed(2)} KB）`;
-      } else {
-        resultStatus.textContent = '⚠️ 已尽量压缩，但仍超过 50KB，建议提供更高质量原图或手动检查。';
-      }
+      resultQuality.textContent = quality ? `JPEG Q=${quality.toFixed(3)}` : '-';
+      resultStatus.textContent = withinLimit ? '✅ 已满足尺寸与体积要求' : '⚠️ 已尽量压缩，但仍超过 50KB，建议提供更高质量原图或手动检查。';
       resultStatus.style.color = withinLimit ? '#2a7a32' : '#b23b12';
 
       downloadLink.href = dataUrl;
