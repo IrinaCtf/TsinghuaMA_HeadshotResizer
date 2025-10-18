@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>清华大学报名照片预处理工具</title>
+  <style>
+    :root {
+      color-scheme: light dark;
+      font-family: "Segoe UI", "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      --accent: #6c2eb9;
+      --bg: #f4f4f8;
+      --border: rgba(108, 46, 185, 0.4);
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: #1b1b1f;
+      min-height: 100vh;
+      display: flex;
+      justify-content: center;
+      padding: 24px;
+    }
+
+    .container {
+      max-width: 900px;
+      background: rgba(255, 255, 255, 0.92);
+      border-radius: 18px;
+      box-shadow: 0 18px 60px rgba(108, 46, 185, 0.15);
+      padding: 40px 36px 48px;
+      backdrop-filter: blur(12px);
+    }
+
+    h1 {
+      margin-top: 0;
+      font-size: clamp(28px, 4vw, 38px);
+      color: #361f6b;
+      text-align: center;
+    }
+
+    .upload-area {
+      margin: 32px 0;
+      padding: 40px;
+      border-radius: 18px;
+      border: 2px dashed var(--border);
+      background: rgba(108, 46, 185, 0.07);
+      text-align: center;
+      transition: border-color 0.2s ease, background 0.2s ease, transform 0.2s ease;
+      cursor: pointer;
+    }
+
+    .upload-area.dragover {
+      border-color: var(--accent);
+      background: rgba(108, 46, 185, 0.12);
+      transform: translateY(-2px);
+    }
+
+    .upload-area p {
+      margin: 8px 0 0;
+      color: rgba(27, 27, 31, 0.7);
+    }
+
+    .hidden-input {
+      display: none;
+    }
+
+    .preview {
+      display: none;
+      gap: 24px;
+      align-items: flex-start;
+      flex-wrap: wrap;
+    }
+
+    .preview img {
+      width: 150px;
+      height: 200px;
+      border-radius: 10px;
+      border: 1px solid rgba(54, 31, 107, 0.2);
+      object-fit: cover;
+      background: white;
+    }
+
+    .details {
+      flex: 1 1 220px;
+      min-width: 220px;
+      background: rgba(108, 46, 185, 0.08);
+      border-radius: 14px;
+      padding: 16px 20px;
+      border: 1px solid rgba(108, 46, 185, 0.15);
+      color: rgba(27, 27, 31, 0.85);
+      line-height: 1.6;
+    }
+
+    .details strong {
+      display: inline-block;
+      width: 80px;
+      color: #361f6b;
+    }
+
+    .actions {
+      margin-top: 20px;
+      display: flex;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    button, a.download {
+      border: none;
+      border-radius: 999px;
+      padding: 12px 24px;
+      font-size: 15px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      color: white;
+      background: linear-gradient(135deg, #6c2eb9, #a641ee);
+      transition: transform 0.2s ease, box-shadow 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+
+    button:hover, a.download:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 12px 24px rgba(108, 46, 185, 0.25);
+    }
+
+    button.secondary {
+      background: rgba(54, 31, 107, 0.1);
+      color: #361f6b;
+      border: 1px solid rgba(54, 31, 107, 0.2);
+    }
+
+    .notice, .official {
+      background: rgba(255, 255, 255, 0.75);
+      border-radius: 16px;
+      padding: 24px;
+      border: 1px solid rgba(108, 46, 185, 0.12);
+      margin-top: 32px;
+      line-height: 1.7;
+      color: rgba(27, 27, 31, 0.85);
+    }
+
+    .notice h2, .official h2 {
+      margin-top: 0;
+      color: #361f6b;
+      font-size: 20px;
+    }
+
+    ul {
+      padding-left: 20px;
+      margin: 12px 0 0;
+    }
+
+    footer {
+      margin-top: 24px;
+      text-align: center;
+      color: rgba(27, 27, 31, 0.55);
+      font-size: 13px;
+    }
+
+    @media (max-width: 720px) {
+      body {
+        padding: 16px;
+      }
+
+      .container {
+        padding: 28px 20px 36px;
+      }
+
+      .upload-area {
+        padding: 28px 20px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <main class="container">
+    <h1>清华大学报名照片预处理工具</h1>
+
+    <section class="upload-area" id="dropzone" tabindex="0" role="button" aria-label="点击或拖放上传照片">
+      <svg width="48" height="48" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+        <path d="M12 16V4" stroke="#6c2eb9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M8 7L12 3L16 7" stroke="#6c2eb9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+        <path d="M20 16V18C20 19.1046 19.1046 20 18 20H6C4.89543 20 4 19.1046 4 18V16" stroke="#6c2eb9" stroke-width="1.5" stroke-linecap="round" stroke-linejoin="round"/>
+      </svg>
+      <h2>拖拽或点击上传照片</h2>
+      <p>支持 JPG / PNG / HEIC / WebP / BMP 等常见格式，建议使用原始大图</p>
+      <input class="hidden-input" type="file" accept="image/*" id="file-input" />
+    </section>
+
+    <section class="preview" id="preview">
+      <img id="result-image" alt="处理后的证件照预览" />
+      <div class="details" id="details">
+        <div><strong>尺寸</strong><span id="result-dimensions">-</span></div>
+        <div><strong>体积</strong><span id="result-size">-</span></div>
+        <div><strong>质量</strong><span id="result-quality">-</span></div>
+        <div id="result-status"></div>
+        <div class="actions">
+          <a class="download" id="download-link" download="tsinghua-photo.jpg">下载处理后的照片</a>
+          <button class="secondary" id="reset-btn" type="button">重新选择</button>
+        </div>
+      </div>
+    </section>
+
+    <section class="notice">
+      <h2>背景与用途</h2>
+      <p>用于清华大学报考点硕士生网上确认时的“报名照片”预处理：将任意输入图片快速转换为150×200 像素、JPG、≤50KB的证件照，默认采用“等比放大后居中裁剪（cover）”保持构图自然，并自动搜索最合适的 JPEG 压缩质量以满足大小限制。</p>
+    </section>
+
+    <section class="official">
+      <h2>官方照片要求（请严格自查）</h2>
+      <ul>
+        <li>本人近期拍摄，白色背景，正面、免冠、无妆、彩色头像电子证件照。</li>
+        <li>宽 150 像素，高 200 像素。</li>
+        <li>JPG 格式，文件大小 ≤ 50KB。</li>
+        <li>脸部无遮挡：头发不得遮挡脸部、眼睛、眉毛、耳朵或造成阴影，五官清晰可见。</li>
+        <li>不得化妆；不得佩戴眼镜/隐形眼镜/美瞳；不得做任何修改（不得用 PS 等软件改变人像特征，如伤疤、痣、发型等）。</li>
+        <li>务必谨慎上传符合全部要求的照片，否则可能影响审核。本工具只做尺寸与体积压缩，不承担合规性审核；请在处理前后自行核对是否满足上列全部要求。</li>
+      </ul>
+    </section>
+
+    <footer>
+      作者：<a href="https://github.com/IrinaCtf/TsinghuaMA_HeadshotResizer.git" target="_blank" rel="noopener">IrinaCtf</a> —— 欢迎前往仓库为项目点亮 ⭐️ 支持！
+    </footer>
+  </main>
+
+  <script>
+    const dropzone = document.getElementById('dropzone');
+    const fileInput = document.getElementById('file-input');
+    const preview = document.getElementById('preview');
+    const resultImage = document.getElementById('result-image');
+    const resultDimensions = document.getElementById('result-dimensions');
+    const resultSize = document.getElementById('result-size');
+    const resultQuality = document.getElementById('result-quality');
+    const resultStatus = document.getElementById('result-status');
+    const downloadLink = document.getElementById('download-link');
+    const resetBtn = document.getElementById('reset-btn');
+
+    const TARGET_WIDTH = 150;
+    const TARGET_HEIGHT = 200;
+    const MAX_BYTES = 50 * 1024;
+
+    const handleFiles = async (files) => {
+      if (!files || !files.length) return;
+      const file = files[0];
+      try {
+        const image = await loadImage(file);
+        const canvas = document.createElement('canvas');
+        canvas.width = TARGET_WIDTH;
+        canvas.height = TARGET_HEIGHT;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(0, 0, TARGET_WIDTH, TARGET_HEIGHT);
+
+        const { drawWidth, drawHeight, offsetX, offsetY } = computeCoverPlacement(image, TARGET_WIDTH, TARGET_HEIGHT);
+        ctx.drawImage(image, offsetX, offsetY, drawWidth, drawHeight);
+
+        const { dataUrl, quality, size, withinLimit } = compressToLimit(canvas, MAX_BYTES);
+
+        if (!dataUrl) {
+          throw new Error('未能生成有效的图片，请尝试使用更高质量的原图。');
+        }
+
+        updatePreview(dataUrl, size, quality, withinLimit);
+      } catch (error) {
+        alert(error.message || '处理失败，请重试或换一张图片。');
+        console.error(error);
+      }
+    };
+
+    const loadImage = (file) => {
+      return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => {
+          const img = new Image();
+          img.onload = () => resolve(img);
+          img.onerror = () => reject(new Error('无法读取图片，请确认文件是否损坏。'));
+          img.src = reader.result;
+        };
+        reader.onerror = () => reject(new Error('文件读取失败，请重试。'));
+        reader.readAsDataURL(file);
+      });
+    };
+
+    const computeCoverPlacement = (img, targetWidth, targetHeight) => {
+      const scale = Math.max(targetWidth / img.width, targetHeight / img.height);
+      const drawWidth = img.width * scale;
+      const drawHeight = img.height * scale;
+      const offsetX = (targetWidth - drawWidth) / 2;
+      const offsetY = (targetHeight - drawHeight) / 2;
+      return { drawWidth, drawHeight, offsetX, offsetY };
+    };
+
+    const dataURLToBlob = (dataUrl) => {
+      const arr = dataUrl.split(',');
+      const mimeMatch = arr[0].match(/:(.*?);/);
+      if (!mimeMatch) {
+        return null;
+      }
+      const mime = mimeMatch[1];
+      const bstr = atob(arr[1]);
+      let n = bstr.length;
+      const u8arr = new Uint8Array(n);
+      while (n--) {
+        u8arr[n] = bstr.charCodeAt(n);
+      }
+      return new Blob([u8arr], { type: mime });
+    };
+
+    const compressToLimit = (canvas, maxBytes) => {
+      let low = 0.01;
+      let high = 1.0;
+      let best = null;
+      let bestQuality = high;
+      let withinLimit = false;
+
+      for (let i = 0; i < 12; i++) {
+        const quality = (low + high) / 2;
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        const blob = dataURLToBlob(dataUrl);
+        if (!blob) break;
+        const size = blob.size;
+
+        if (size <= maxBytes) {
+          best = { dataUrl, size };
+          bestQuality = quality;
+          withinLimit = true;
+          low = quality;
+        } else {
+          high = quality;
+        }
+      }
+
+      if (!best) {
+        const fallbackUrl = canvas.toDataURL('image/jpeg', low);
+        const fallbackBlob = dataURLToBlob(fallbackUrl);
+        if (fallbackBlob) {
+          best = { dataUrl: fallbackUrl, size: fallbackBlob.size };
+          bestQuality = low;
+          withinLimit = fallbackBlob.size <= maxBytes;
+        }
+      }
+
+      if (best && withinLimit) {
+        let stepQuality = bestQuality;
+        while (stepQuality < 0.999) {
+          const nextQuality = Math.min(stepQuality + 0.01, 0.999);
+          if (nextQuality <= stepQuality) break;
+          const candidateUrl = canvas.toDataURL('image/jpeg', nextQuality);
+          const candidateBlob = dataURLToBlob(candidateUrl);
+          if (!candidateBlob) break;
+          if (candidateBlob.size > maxBytes) {
+            break;
+          }
+          best = { dataUrl: candidateUrl, size: candidateBlob.size };
+          bestQuality = nextQuality;
+          stepQuality = nextQuality;
+        }
+      }
+
+      if (!best) {
+        return { dataUrl: null, quality: null, size: null, withinLimit: false };
+      }
+
+      return {
+        dataUrl: best.dataUrl,
+        quality: bestQuality,
+        size: best.size,
+        withinLimit
+      };
+    };
+
+    const formatBytes = (bytes) => {
+      if (!bytes && bytes !== 0) return '-';
+      return `${(bytes / 1024).toFixed(2)} KB`;
+    };
+
+    const updatePreview = (dataUrl, size, quality, withinLimit) => {
+      resultImage.src = dataUrl;
+      resultDimensions.textContent = `${TARGET_WIDTH} × ${TARGET_HEIGHT}`;
+      resultSize.textContent = `${formatBytes(size)} / 50.00 KB`;
+      resultQuality.textContent = quality ? `JPEG Q=${(quality * 100).toFixed(1)}%` : '-';
+      if (withinLimit) {
+        const remaining = Math.max(0, MAX_BYTES - size);
+        resultStatus.textContent = `✅ 已满足尺寸与体积要求（距 50KB 上限剩余 ${(remaining / 1024).toFixed(2)} KB）`;
+      } else {
+        resultStatus.textContent = '⚠️ 已尽量压缩，但仍超过 50KB，建议提供更高质量原图或手动检查。';
+      }
+      resultStatus.style.color = withinLimit ? '#2a7a32' : '#b23b12';
+
+      downloadLink.href = dataUrl;
+      downloadLink.setAttribute('download', `tsinghua-photo-${Date.now()}.jpg`);
+
+      preview.style.display = 'flex';
+    };
+
+    dropzone.addEventListener('click', () => fileInput.click());
+    dropzone.addEventListener('keydown', (event) => {
+      if (event.key === 'Enter' || event.key === ' ') {
+        event.preventDefault();
+        fileInput.click();
+      }
+    });
+
+    dropzone.addEventListener('dragover', (event) => {
+      event.preventDefault();
+      dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+      dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (event) => {
+      event.preventDefault();
+      dropzone.classList.remove('dragover');
+      handleFiles(event.dataTransfer.files);
+    });
+
+    fileInput.addEventListener('change', () => {
+      handleFiles(fileInput.files);
+    });
+
+    resetBtn.addEventListener('click', () => {
+      fileInput.value = '';
+      preview.style.display = 'none';
+      resultImage.src = '';
+    });
+  </script>
+</body>
+</html>
